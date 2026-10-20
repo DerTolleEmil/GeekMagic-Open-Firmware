@@ -28,6 +28,7 @@
 #include "config/ConfigManager.h"
 #include "wireless/WiFiManager.h"
 #include "display/DisplayManager.h"
+#include "display/UdpDisplayReceiver.h"
 #include "web/Webserver.h"
 #include "web/Api.h"
 #include "ntp/NTPClient.h"
@@ -59,6 +60,7 @@ static constexpr const char* METRICS_ENDPOINT = METRICS_URL;
 
 Webserver* webserver = nullptr;
 NTPClient* ntpClient = nullptr;
+UdpDisplayReceiver udpDisplayReceiver;
 
 /**
  * @brief Formats bytes into a human-readable string
@@ -185,6 +187,8 @@ void setup() {
         DashboardManager::begin(METRICS_ENDPOINT);
     }
 
+    udpDisplayReceiver.begin();
+
     // enable watchdog before going to loop()
     // 2 seconds should be way more than the main loop needs to do stuff
     EspClass::wdtEnable(WDTO_2S);
@@ -210,6 +214,7 @@ void loop() {
         ntpClient->loop();
     }
 
+    udpDisplayReceiver.update();
     DisplayManager::update();
 
     if (METRICS_ENDPOINT[0] != '\0' && wifiManager != nullptr && WiFiManager::isConnected() &&

@@ -713,6 +713,17 @@ auto DisplayManager::stopGif() -> bool {
     return true;
 }
 /**
+ * @brief Draw a validated rectangle of row-major, big-endian RGB565 pixels from RAM.
+ */
+void DisplayManager::drawRgb565Rectangle(int16_t xPos, int16_t yPos, int16_t width, int16_t height, uint16_t* pixels) {
+    if (g_gif != nullptr && g_gif->isPlaying()) {
+        // Stop animation without clearing pixels outside this rectangle.
+        g_gif->stop();
+    }
+    g_lcd.draw16bitBeRGBBitmap(xPos, yPos, pixels, width, height);
+}
+
+/**
  * @brief Update the GIF decoder (should be called regularly in loop)
  *
  * @return void

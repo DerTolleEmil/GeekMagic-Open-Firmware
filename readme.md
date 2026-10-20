@@ -25,6 +25,7 @@
     - [Color format](#color-format)
 - [What's next ?](#whats-next)
 - [The firmware](#plateformio-firmware)
+- [UDP display streaming](#udp-display-streaming)
 - [Install guide](#installation-guide)
 - [License](#license)
 - [Support](#support)
@@ -255,6 +256,39 @@ This is the "real" firmware I want to improve, with clean and reliable code
 | Filesystem        | LittleFS                                                                 | Local storage LittleFS                  |
 | Graphics display  | Arduino_GFX Library                                                      | ST7789 display management (SPI, RGB565) |
 | Web UI (frontend) | [Pico.css](https://picocss.com/docs), [Alpine.js](https://alpinejs.dev/) | Minimalist web user interface           |
+
+## UDP display streaming
+
+The firmware listens on **UDP port 7777**. Each datagram draws one complete
+rectangle directly from RAM using `draw16bitBeRGBBitmap()`; it never writes the
+pixel data to flash. Only a firmware update is needed to add this feature.
+
+| Byte offset | Content |
+| --- | --- |
+| 0 | X coordinate (0-based) |
+| 1 | Y coordinate (0-based) |
+| 2 | Width in pixels |
+| 3 | Height in pixels |
+| 4 onward | RGB565 pixels, high byte first, left to right then top to bottom |
+
+The exact datagram length must be `4 + width * height * 2` bytes. Width and height
+must be nonzero, the rectangle must fit within the 240x240 display, and it must
+contain at most **720 pixels** (a maximum UDP payload of **1,444 bytes**).
+For example, a 240x3 strip contains 1,440 pixel bytes plus the four-byte header.
+RGB565 packs red into bits 15-11, green into bits 10-5 and blue into bits 4-0:
+red is `F8 00`, green `07 E0`, and blue `00 1F`.
+
+A valid packet stops GIF playback before drawing. Pixels outside its rectangle
+remain unchanged. Invalid packets are ignored without affecting playback or the
+display. The receiver handles at most four datagrams per main-loop iteration so
+other firmware tasks can run. Choose either streaming or the optional metrics
+dashboard as the display source; the dashboard can otherwise overwrite pixels.
+
+The protocol has no authentication, acknowledgements, frame counter or frame
+commit command. Rectangles appear as they are drawn. Pace the sender to avoid
+overrunning the receiver. Packet loss leaves old pixels visible, and late packets
+can overwrite newer pixels; periodic full-screen refreshes can repair stale
+regions. The sender should send an initial full frame before using delta updates.
 
 ## Installation Guide
 
