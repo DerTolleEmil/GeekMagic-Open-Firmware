@@ -192,6 +192,10 @@ void setup() {
     // enable watchdog before going to loop()
     // 2 seconds should be way more than the main loop needs to do stuff
     EspClass::wdtEnable(WDTO_2S);
+
+    // Apply the saved level only after normal startup has finished. Rescue returns
+    // above and keeps the 100% brightness established by DisplayManager::begin().
+    DisplayManager::setBrightness(configManager.getLCDBrightness());
 }
 
 void loop() {

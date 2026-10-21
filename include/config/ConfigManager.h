@@ -52,6 +52,8 @@ class ConfigManager {
     uint8_t getLCDRotation() const;
     void setLCDRotation(uint8_t newRotation);
     uint32_t getLCDSpiHz() const;
+    uint8_t getLCDBrightness() const { return lcd_brightness; }
+    void setLCDBrightness(uint8_t brightness) { lcd_brightness = brightness; }
 
    public:
     uint8_t getLCDRotationSafe() const { return lcd_rotation; }
@@ -61,6 +63,7 @@ class ConfigManager {
     std::string filename;
     SecureStorage secure;
     uint8_t lcd_rotation = 4;
+    uint8_t lcd_brightness = 100;
     std::string ntp_server;
 
     const char* getNtpServer() const { return ntp_server.c_str(); }

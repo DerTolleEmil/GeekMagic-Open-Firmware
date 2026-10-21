@@ -68,6 +68,13 @@ auto ConfigManager::load() -> bool {
     String ntp_server_cfg = doc["ntp_server"] | "";
 
     this->lcd_rotation = doc["lcd_rotation"] | lcd_rotation;
+    // Older configurations have no brightness setting and retain full brightness.
+    if (doc["lcd_brightness"].is<int>()) {
+        int brightness = doc["lcd_brightness"].as<int>();
+        if (brightness >= 0 && brightness <= 100) {
+            lcd_brightness = static_cast<uint8_t>(brightness);
+        }
+    }
 
     String nvs_ssid = secure.get("wifi_ssid", "");
     String nvs_password = secure.get("wifi_password", "");
@@ -201,6 +208,7 @@ auto ConfigManager::save() -> bool {
     secure.put("wifi_password", this->getPassword());
 
     doc["lcd_rotation"] = lcd_rotation;
+    doc["lcd_brightness"] = lcd_brightness;
     if (!this->ntp_server.empty()) {
         doc["ntp_server"] = this->ntp_server.c_str();
     }

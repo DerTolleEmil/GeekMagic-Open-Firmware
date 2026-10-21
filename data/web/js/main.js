@@ -7,6 +7,8 @@ document.addEventListener("alpine:init", () => {
   if (typeof wifiHandler !== "undefined")
     Alpine.data("wifiHandler", wifiHandler);
   if (typeof ntpHandler !== "undefined") Alpine.data("ntpHandler", ntpHandler);
+  if (typeof brightnessHandler !== "undefined")
+    Alpine.data("brightnessHandler", brightnessHandler);
   if (typeof rotationHandler !== "undefined")
     Alpine.data("rotationHandler", rotationHandler);
   if (typeof rebootHandler !== "undefined")

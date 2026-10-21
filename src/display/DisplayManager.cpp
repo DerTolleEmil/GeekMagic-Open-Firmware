@@ -210,13 +210,20 @@ static constexpr uint8_t ST7789_ADDR_END_LOW = 0xEF;
 auto DisplayManager::getGfx() -> Arduino_GFX* { return &g_lcd; }
 
 /**
- * @brief Turn the LCD backlight on
- *
- * @return void
+ * @brief Apply backlight brightness without modifying display memory.
+ * Software PWM uses 1 kHz; the active-low backlight needs an inverted duty cycle.
  */
-static inline void lcdBacklightOn() {
-    pinMode((uint8_t)LCD_BACKLIGHT_GPIO, OUTPUT);
-    digitalWrite((uint8_t)LCD_BACKLIGHT_GPIO, LCD_BACKLIGHT_ACTIVE_LOW ? LOW : HIGH);
+void DisplayManager::setBrightness(uint8_t percent) {
+    constexpr uint32_t PWM_RANGE = 1000;
+    constexpr uint32_t PWM_FREQUENCY_HZ = 1000;
+    auto brightness = std::min<uint32_t>(percent, 100);
+    auto duty = brightness * PWM_RANGE / 100;
+    if (LCD_BACKLIGHT_ACTIVE_LOW) {
+        duty = PWM_RANGE - duty;
+    }
+    analogWriteRange(PWM_RANGE);
+    analogWriteFreq(PWM_FREQUENCY_HZ);
+    analogWrite(static_cast<uint8_t>(LCD_BACKLIGHT_GPIO), static_cast<int>(duty));
 }
 
 /**
@@ -372,7 +379,8 @@ static void lcdHardReset() {
 static void lcdEnsureInit() {
     Logger::info("Initialization started", "DisplayManager");
 
-    lcdBacklightOn();
+    // Keep startup and rescue diagnostics visible, regardless of saved brightness.
+    DisplayManager::setBrightness(100);
 
     uint8_t rotation = configManager.getLCDRotationSafe();
 

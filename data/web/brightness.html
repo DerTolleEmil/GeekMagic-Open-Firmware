@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Screen Brightness</title>
+    <link rel="stylesheet" href="./css/pico.min.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <script src="./js/alpinejs.min.js" defer></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/themeSwitcher.js"></script>
+    <script src="./js/brightnessHandler.js"></script>
+    <script src="./js/main.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <header id="header-placeholder"></header>
+      <a href="./index.html" class="wifi-back-link">← Back to Home</a>
+      <section x-data="brightnessHandler()">
+        <h2>Display Brightness</h2>
+        <p>Changes apply immediately and are saved for the next reboot. 0% turns the backlight off.</p>
+        <form @submit.prevent="saveBrightness()">
+          <label for="screen-brightness">Brightness (%)</label>
+          <input
+            id="screen-brightness"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            required
+            x-model.number="brightness"
+            x-bind:disabled="loading"
+          />
+          <button type="submit" x-bind:disabled="loading">Save Brightness</button>
+          <button type="button" @click="fetchBrightness()" x-bind:disabled="loading">Refresh</button>
+        </form>
+        <p role="status" x-text="statusMsg"></p>
+      </section>
+      <footer id="footer-placeholder"></footer>
+    </main>
+  </body>
+</html>

@@ -290,6 +290,30 @@ overrunning the receiver. Packet loss leaves old pixels visible, and late packet
 can overwrite newer pixels; periodic full-screen refreshes can repair stale
 regions. The sender should send an initial full frame before using delta updates.
 
+## Backlight brightness
+
+The home page links to **Screen Brightness**, with a numeric 0-100 percent field
+and Save/Refresh buttons. The authenticated API exposes:
+
+- `GET /api/v1/display/brightness` returns `{"brightness":100}`.
+- `POST /api/v1/display/brightness` accepts `{"brightness":35}` and returns
+  `{"status":"ok","brightness":35}`. Values must be integers between 0 and 100.
+
+Changes apply immediately using 1 kHz PWM on the configured backlight GPIO,
+respect its active-low polarity, and persist as `lcd_brightness` in `config.json`.
+Repeated requests for the same brightness do not write the configuration again.
+Existing configurations without the setting retain 100% brightness.
+Startup and rescue screens always use 100% brightness. Only the final step of
+normal `setup()` applies the saved brightness; rescue never applies it.
+Reflashing LittleFS replaces `config.json`, so an image without `lcd_brightness`
+(or with it set to 100) restores full brightness. The current local configuration
+omits this setting. This also replaces other files in LittleFS; it does not erase
+the credentials already migrated to EEPROM.
+Backlight changes do not clear pixels or interrupt GIF/UDP drawing.
+Install both the firmware and LittleFS images to get the API and web control.
+A LittleFS image replaces device files, so preserve any device-side files/config
+that are not in your local `data` folder before installing it.
+
 ## Installation Guide
 
 To use the open-source firmware on your compatible GeekMagic device, follow these steps:
@@ -316,6 +340,7 @@ Note: The Wi-Fi credentials and API token in config.json are migrated to EEPROM 
 - `wifi_password`: Your WiFi password
 - `api_token`: Bearer token for API authentication
 - `lcd_rotation`: Display rotation setting
+- `lcd_brightness`: Backlight brightness, integer 0-100 (default 100); 0 turns the backlight off
 - `ntp_server`: NTP server for time synchronization
 
 Security of stored secrets:

@@ -36,6 +36,7 @@ static constexpr int THREE_LINES_SPACE = 60;
 class DisplayManager {
    public:
     static void begin();
+    static void setBrightness(uint8_t percent);
     static void setRotation(uint8_t rotation, String currentIP);
     static Arduino_GFX* getGfx();
     static void drawStartup(String currentIP);

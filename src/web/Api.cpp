@@ -95,6 +95,15 @@ void registerApiEndpoints(Webserver* webserver) {
     // responses=200:application/json,400:application/json,401:application/json
     webserver->raw().on("/api/v1/ntp/config", HTTP_POST, [webserver]() { handleNtpConfigSet(webserver); });
 
+    // @openapi {get} /display/brightness version=v1 group=Display summary="Get backlight brightness (0-100 percent)" requiresAuth=true
+    // responses=200:application/json,401:application/json
+    webserver->raw().on("/api/v1/display/brightness", HTTP_GET, [webserver]() { handleDisplayBrightnessGet(webserver); });
+
+    // @openapi {post} /display/brightness version=v1 group=Display summary="Set and save backlight brightness (0-100 percent)" requiresAuth=true
+    // requestBody=application/json requestBodySchema=brightness:integer example={"brightness":35}
+    // responses=200:application/json,400:application/json,401:application/json,500:application/json
+    webserver->raw().on("/api/v1/display/brightness", HTTP_POST, [webserver]() { handleDisplayBrightnessSet(webserver); });
+
     // @openapi {get} /display/rotation version=v1 group=Display summary="Get display rotation" requiresAuth=true
     // responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/display/rotation", HTTP_GET, [webserver]() { handleDisplayRotationGet(webserver); });
@@ -827,6 +836,64 @@ void handleNtpConfigSet(Webserver* webserver) {
 
     setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+}
+
+/**
+ * @brief Get saved backlight brightness in percent.
+ */
+void handleDisplayBrightnessGet(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) return;
+
+    JsonDocument doc;
+    doc["brightness"] = configManager.getLCDBrightness();
+    String json;
+    serializeJson(doc, json);
+    setCorsHeaders(webserver);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+}
+
+/**
+ * @brief Validate, save and immediately apply backlight brightness.
+ */
+void handleDisplayBrightnessSet(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) return;
+
+    JsonDocument request;
+    auto error = deserializeJson(request, webserver->raw().arg("plain"));
+    JsonDocument response;
+    int status = HTTP_CODE_OK;
+    if (error || !request["brightness"].is<int>()) {
+        status = HTTP_CODE_BAD_REQUEST;
+        response["status"] = "error";
+        response["message"] = "JSON body must contain an integer brightness";
+    } else {
+        int brightness = request["brightness"].as<int>();
+        if (brightness < 0 || brightness > 100) {
+            status = HTTP_CODE_BAD_REQUEST;
+            response["status"] = "error";
+            response["message"] = "brightness must be between 0 and 100";
+        } else {
+            auto previous = configManager.getLCDBrightness();
+            auto updated = static_cast<uint8_t>(brightness);
+            configManager.setLCDBrightness(updated);
+            // Reapplying the same value does not write flash again.
+            if (updated != previous && !configManager.save()) {
+                configManager.setLCDBrightness(previous);
+                status = HTTP_CODE_INTERNAL_ERROR;
+                response["status"] = "error";
+                response["message"] = "Failed to save config";
+            } else {
+                DisplayManager::setBrightness(updated);
+                response["status"] = "ok";
+                response["brightness"] = updated;
+            }
+        }
+    }
+
+    String json;
+    serializeJson(response, json);
+    setCorsHeaders(webserver);
+    webserver->raw().send(status, "application/json", json);
 }
 
 /**
